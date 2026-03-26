@@ -1,0 +1,30 @@
+name: posturely
+description: AI-Powered Posture Care - A medical-grade posture coaching application
+publish_to: 'none'
+version: 2.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  # To add custom fonts to your application, add a fonts section here.
+  # fonts:
+  #   - family: Inter
+  #     fonts:
+  #       - asset: fonts/Inter-Regular.ttf
+  #       - asset: fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: fonts/Inter-SemiBold.ttf
+  #         weight: 600
