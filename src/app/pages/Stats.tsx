@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BottomNav } from "../components/BottomNav";
 import { RefreshCw, TrendingUp, Award, Target } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 type TimeRange = "Week" | "Month" | "Year";
 

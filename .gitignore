@@ -7,6 +7,21 @@
 .buildlog/
 .history
 
+# Node/Web
+node_modules/
+dist/
+.vite/
+# pnpm-lock.yaml is intentionally tracked for reproducible installs.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+*.suo
+
 
 
 # Flutter repo-specific

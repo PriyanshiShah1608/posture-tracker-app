@@ -1,5 +1,5 @@
 import { ArrowLeft, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 export function Feedback() {
   const navigate = useNavigate();

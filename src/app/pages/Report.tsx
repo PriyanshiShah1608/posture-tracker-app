@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 
 export function Report() {

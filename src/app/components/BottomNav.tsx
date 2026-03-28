@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Activity, Camera, Dumbbell, BarChart3, User } from "lucide-react";
 
 export function BottomNav() {

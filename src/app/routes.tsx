@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter } from "react-router-dom";
 import { Splash } from "./pages/Splash";
 import { Onboarding } from "./pages/Onboarding";
 import { Home } from "./pages/Home";
