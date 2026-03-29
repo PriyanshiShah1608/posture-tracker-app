@@ -229,7 +229,7 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get light {
-    final colorScheme = ColorScheme.light(
+    const colorScheme = ColorScheme.light(
       primary: AppColors.primary,
       primaryContainer: AppColors.primarySurface,
       onPrimary: AppColors.textOnPrimary,

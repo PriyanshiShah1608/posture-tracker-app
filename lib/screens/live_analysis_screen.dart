@@ -66,20 +66,20 @@ class _MockPoseEngine {
     final squat = phase * 0.08; // knee bend amount
 
     return [
-      Landmark(0.50, 0.12, JointStatus.correct),                         // head
-      Landmark(0.50, 0.22, JointStatus.correct),                         // neck
-      Landmark(0.38, 0.26, JointStatus.correct),                         // l shoulder
-      Landmark(0.62, 0.26, JointStatus.correct),                         // r shoulder
-      Landmark(0.32, 0.38, JointStatus.correct),                         // l elbow
-      Landmark(0.68, 0.38, JointStatus.correct),                         // r elbow
-      Landmark(0.30, 0.48, JointStatus.correct),                         // l wrist
-      Landmark(0.70, 0.48, JointStatus.correct),                         // r wrist
+      const Landmark(0.50, 0.12, JointStatus.correct),                         // head
+      const Landmark(0.50, 0.22, JointStatus.correct),                         // neck
+      const Landmark(0.38, 0.26, JointStatus.correct),                         // l shoulder
+      const Landmark(0.62, 0.26, JointStatus.correct),                         // r shoulder
+      const Landmark(0.32, 0.38, JointStatus.correct),                         // l elbow
+      const Landmark(0.68, 0.38, JointStatus.correct),                         // r elbow
+      const Landmark(0.30, 0.48, JointStatus.correct),                         // l wrist
+      const Landmark(0.70, 0.48, JointStatus.correct),                         // r wrist
       Landmark(0.42, 0.52 + squat, JointStatus.correct),                 // l hip
       Landmark(0.58, 0.52 + squat, JointStatus.correct),                 // r hip
       Landmark(0.40, 0.70 + squat, _kneeStatus(phase)),                  // l knee
       Landmark(0.60, 0.70 + squat, _kneeStatus(phase)),                  // r knee
-      Landmark(0.40, 0.88, JointStatus.correct),                         // l ankle
-      Landmark(0.60, 0.88, JointStatus.correct),                         // r ankle
+      const Landmark(0.40, 0.88, JointStatus.correct),                         // l ankle
+      const Landmark(0.60, 0.88, JointStatus.correct),                         // r ankle
     ];
   }
 
@@ -629,8 +629,8 @@ class _ViewfinderPainter extends CustomPainter {
     const c = 24.0;
 
     // Top-left
-    canvas.drawLine(Offset(m, m), Offset(m + c, m), paint);
-    canvas.drawLine(Offset(m, m), Offset(m, m + c), paint);
+    canvas.drawLine(const Offset(m, m), const Offset(m + c, m), paint);
+    canvas.drawLine(const Offset(m, m), const Offset(m, m + c), paint);
     // Top-right
     canvas.drawLine(Offset(size.width - m, m), Offset(size.width - m - c, m), paint);
     canvas.drawLine(Offset(size.width - m, m), Offset(size.width - m, m + c), paint);
@@ -717,7 +717,7 @@ class _FeedbackPanel extends StatelessWidget {
                               color: AppColors.primary,
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: ' reps',
                             style: AppTextStyles.bodyMedium,
                           ),
@@ -853,7 +853,7 @@ class _AnimatedScoreRing extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  Text(
+                  const Text(
                     'score',
                     style: TextStyle(
                       fontSize: 10,

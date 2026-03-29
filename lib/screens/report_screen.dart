@@ -154,7 +154,7 @@ class _ReportScreenState extends State<ReportScreen>
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  Text('Session Report', style: AppTextStyles.headingSmall),
+                  const Text('Session Report', style: AppTextStyles.headingSmall),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () {},
@@ -568,16 +568,16 @@ class _CoachingSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm + 2),
-              Text('What to improve', style: AppTextStyles.headingSmall),
+              const Text('What to improve', style: AppTextStyles.headingSmall),
             ],
           ),
           const SizedBox(height: AppSpacing.md + 4),
           for (int i = 0; i < tips.length; i++) ...[
             _TipItem(tip: tips[i]),
             if (i < tips.length - 1)
-              Padding(
+              const Padding(
                 padding:
-                    const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+                    EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
                 child: Divider(
                   height: 1,
                   color: AppColors.borderLight,
@@ -671,7 +671,7 @@ class _BreakdownSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm + 2),
-              Text('Your form breakdown', style: AppTextStyles.headingSmall),
+              const Text('Your form breakdown', style: AppTextStyles.headingSmall),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),

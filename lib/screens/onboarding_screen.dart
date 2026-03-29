@@ -190,8 +190,8 @@ class _PageOne extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _OnboardingPageLayout(
-      illustration: const _PostureIllustration(),
+    return const _OnboardingPageLayout(
+      illustration: _PostureIllustration(),
       title: 'Your posture,\ngently corrected',
       body:
           'Posturely watches your form in real time and nudges you back into alignment — so you feel better, stand taller, and move with confidence.',
@@ -208,8 +208,8 @@ class _PageTwo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _OnboardingPageLayout(
-      illustration: const _HowItWorksIllustration(),
+    return const _OnboardingPageLayout(
+      illustration: _HowItWorksIllustration(),
       title: 'Pick an exercise.\nWe handle the rest.',
       body:
           'Choose from guided routines, point your camera, and get instant AI feedback on your form. No wearables, no guessing.',
@@ -226,8 +226,8 @@ class _PageThree extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _OnboardingPageLayout(
-      illustration: const _CameraIllustration(),
+    return const _OnboardingPageLayout(
+      illustration: _CameraIllustration(),
       title: 'Allow camera\nfor live coaching',
       body:
           'Posturely uses your camera to analyze posture on-device. Nothing is recorded or uploaded — your data stays private, always.',
@@ -309,7 +309,7 @@ class _PostureIllustration extends StatelessWidget {
       child: Container(
         width: 220,
         height: 220,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.primarySurface,
           shape: BoxShape.circle,
         ),
@@ -469,7 +469,7 @@ class _HowItWorksIllustration extends StatelessWidget {
               child: Container(
                 width: 180,
                 height: 180,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primarySurface,
                   shape: BoxShape.circle,
                 ),
@@ -501,17 +501,17 @@ class _HowItWorksIllustration extends StatelessWidget {
             ),
 
             // Step badges around the phone
-            Positioned(
+            const Positioned(
               left: 0,
               top: 40,
               child: _StepBadge(number: 1, label: 'Select'),
             ),
-            Positioned(
+            const Positioned(
               right: 0,
               top: 100,
               child: _StepBadge(number: 2, label: 'Record'),
             ),
-            Positioned(
+            const Positioned(
               left: 8,
               bottom: 20,
               child: _StepBadge(number: 3, label: 'Improve'),
@@ -633,8 +633,8 @@ class _PhoneContentPainter extends CustomPainter {
     const c = 16.0; // corner length
 
     // Top-left
-    canvas.drawLine(Offset(m, m), Offset(m + c, m), cornerPaint);
-    canvas.drawLine(Offset(m, m), Offset(m, m + c), cornerPaint);
+    canvas.drawLine(const Offset(m, m), const Offset(m + c, m), cornerPaint);
+    canvas.drawLine(const Offset(m, m), const Offset(m, m + c), cornerPaint);
     // Top-right
     canvas.drawLine(Offset(size.width - m, m), Offset(size.width - m - c, m), cornerPaint);
     canvas.drawLine(Offset(size.width - m, m), Offset(size.width - m, m + c), cornerPaint);

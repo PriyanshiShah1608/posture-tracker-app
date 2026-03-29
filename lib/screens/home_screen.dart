@@ -176,8 +176,8 @@ class _HomeScreenState extends State<HomeScreen>
                   child: _StaggerSlot(
                     fade: _fadeAnims[2],
                     slide: _slideAnims[2],
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
                       ),
                       child: Text(
@@ -395,7 +395,7 @@ class _HeroCard extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
@@ -406,7 +406,7 @@ class _HeroCard extends StatelessWidget {
                             color: AppColors.primary,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Icon(
                           Icons.arrow_forward_rounded,
                           size: 16,
@@ -492,7 +492,7 @@ class _HeroIllustrationPainter extends CustomPainter {
 // ══════════════════════════════════════════════
 
 class ExerciseCard extends StatefulWidget {
-  const ExerciseCard({
+  const ExerciseCard({super.key, 
     required this.exercise,
     required this.isSelected,
     required this.onTap,
@@ -678,7 +678,7 @@ class _QuickStats extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
+          const Expanded(
             child: _StatItem(
               icon: Icons.play_circle_outline_rounded,
               value: '3',
@@ -691,7 +691,7 @@ class _QuickStats extends StatelessWidget {
             height: 36,
             color: AppColors.borderLight,
           ),
-          Expanded(
+          const Expanded(
             child: _StatItem(
               icon: Icons.star_outline_rounded,
               value: '87',
@@ -704,7 +704,7 @@ class _QuickStats extends StatelessWidget {
             height: 36,
             color: AppColors.borderLight,
           ),
-          Expanded(
+          const Expanded(
             child: _StatItem(
               icon: Icons.local_fire_department_outlined,
               value: '5d',
