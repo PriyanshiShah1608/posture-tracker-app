@@ -33,10 +33,8 @@ class ExercisesScreen extends StatefulWidget {
 }
 
 class _ExercisesScreenState extends State<ExercisesScreen> {
-  int _currentIndex = 1;
-
-  final List<Exercise> exercises = [
-    Exercise(
+  final List<ExerciseItem> exercises = [
+    ExerciseItem(
       name: 'Squat',
       category: 'Lower Body',
       duration: '3 sets × 12 reps',
@@ -46,7 +44,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       iconColor: const Color(0xFF3B82F6),
       borderColor: const Color(0xFFBFDBFE),
     ),
-    Exercise(
+    ExerciseItem(
       name: 'Plank',
       category: 'Core Stability',
       duration: '3 sets × 30 sec',
@@ -56,7 +54,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       iconColor: const Color(0xFF9333EA),
       borderColor: const Color(0xFFE9D5FF),
     ),
-    Exercise(
+    ExerciseItem(
       name: 'Deadlift',
       category: 'Full Body',
       duration: '3 sets × 10 reps',
@@ -66,7 +64,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       iconColor: const Color(0xFF06B6D4),
       borderColor: const Color(0xFFA5F3FC),
     ),
-    Exercise(
+    ExerciseItem(
       name: 'Shoulder Press',
       category: 'Upper Body',
       duration: '3 sets × 12 reps',
@@ -76,7 +74,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       iconColor: const Color(0xFF10B981),
       borderColor: const Color(0xFFA7F3D0),
     ),
-    Exercise(
+    ExerciseItem(
       name: 'Bridge',
       category: 'Lower Back',
       duration: '3 sets × 15 reps',
@@ -166,7 +164,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     );
   }
 
-  Widget _buildExerciseCard(Exercise exercise) {
+  Widget _buildExerciseCard(ExerciseItem exercise) {
     return GestureDetector(
       onTap: () => context.push(AppRoutes.liveSession),
       child: Container(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/bottom_nav.dart';
+import '../router.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -9,32 +11,11 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  int _currentIndex = 3;
   String _timeRange = 'Week';
 
   final List<String> weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   final List<int> dailyScores = [85, 88, 90, 87, 93, 91, 89];
   final List<int> dailyMinutes = [10, 5, 8, 0, 14, 12, 0];
-
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/home');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/exercises');
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/scan');
-        break;
-      case 3:
-        break;
-      case 4:
-        Navigator.of(context).pushReplacementNamed('/profile');
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -393,7 +374,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/report'),
+                        onPressed: () => context.push(AppRoutes.report),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4F46E5),
                           foregroundColor: Colors.white,
@@ -420,10 +401,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
-      ),
+      bottomNavigationBar: const BottomNav(currentIndex: 3),
     );
   }
 

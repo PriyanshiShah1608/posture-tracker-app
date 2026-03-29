@@ -11,8 +11,6 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
-  int _currentIndex = 2;
-
   final List<String> scanFeatures = [
     'AI-powered full body posture analysis',
     'Identify muscle imbalances & risk areas',

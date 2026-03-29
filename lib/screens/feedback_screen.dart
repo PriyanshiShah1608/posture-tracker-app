@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../router.dart';
 
 class FeedbackScreen extends StatelessWidget {
   const FeedbackScreen({super.key});
@@ -27,7 +29,7 @@ class FeedbackScreen extends StatelessWidget {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => context.pop(),
                       child: Container(
                         width: 40,
                         height: 40,
@@ -348,7 +350,7 @@ class FeedbackScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.pop(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4F46E5),
                       foregroundColor: Colors.white,
@@ -371,7 +373,7 @@ class FeedbackScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/report'),
+                    onPressed: () => context.push(AppRoutes.report),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF4F46E5),
                       padding: const EdgeInsets.symmetric(vertical: 20),

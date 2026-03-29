@@ -9,8 +9,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _currentIndex = 4;
-
   final List<Map<String, dynamic>> menuItems = [
     {'icon': Icons.settings_rounded, 'label': 'Account Settings'},
     {'icon': Icons.notifications_rounded, 'label': 'Notifications'},
@@ -18,26 +16,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     {'icon': Icons.shield_rounded, 'label': 'Privacy & Security'},
     {'icon': Icons.help_rounded, 'label': 'Help & Support'},
   ];
-
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/home');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/exercises');
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/scan');
-        break;
-      case 3:
-        Navigator.of(context).pushReplacementNamed('/stats');
-        break;
-      case 4:
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -344,10 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
-      ),
+      bottomNavigationBar: const BottomNav(currentIndex: 4),
     );
   }
 }
