@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/bottom_nav.dart';
+import '../router.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -19,25 +21,7 @@ class _ScanScreenState extends State<ScanScreen> {
     'Safe for all fitness levels',
   ];
 
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/home');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/exercises');
-        break;
-      case 2:
-        break;
-      case 3:
-        Navigator.of(context).pushReplacementNamed('/stats');
-        break;
-      case 4:
-        Navigator.of(context).pushReplacementNamed('/profile');
-        break;
-    }
-  }
+  // Navigation handled by BottomNav widget
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +231,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/live-analysis'),
+                        onPressed: () => context.push(AppRoutes.liveSession),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4F46E5),
                           foregroundColor: Colors.white,
@@ -299,9 +283,8 @@ class _ScanScreenState extends State<ScanScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
+      bottomNavigationBar: const BottomNav(
+        currentIndex: 2,
       ),
     );
   }

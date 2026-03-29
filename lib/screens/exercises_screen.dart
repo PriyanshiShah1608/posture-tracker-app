@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/bottom_nav.dart';
+import '../router.dart';
 
-class Exercise {
+class ExerciseItem {
   final String name;
   final String category;
   final String duration;
@@ -11,7 +13,7 @@ class Exercise {
   final Color iconColor;
   final Color borderColor;
 
-  Exercise({
+  ExerciseItem({
     required this.name,
     required this.category,
     required this.duration,
@@ -86,25 +88,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     ),
   ];
 
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/home');
-        break;
-      case 1:
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/scan');
-        break;
-      case 3:
-        Navigator.of(context).pushReplacementNamed('/stats');
-        break;
-      case 4:
-        Navigator.of(context).pushReplacementNamed('/profile');
-        break;
-    }
-  }
+  // Navigation handled by BottomNav widget
 
   @override
   Widget build(BuildContext context) {
@@ -176,16 +160,15 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
+      bottomNavigationBar: const BottomNav(
+        currentIndex: 1,
       ),
     );
   }
 
   Widget _buildExerciseCard(Exercise exercise) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/live-analysis'),
+      onTap: () => context.push(AppRoutes.liveSession),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
