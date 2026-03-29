@@ -1,117 +1,116 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_theme.dart';
 import '../models/exercise.dart';
+import '../models/landmark.dart';
+import '../services/camera_service.dart';
+import '../services/feedback_service.dart' hide Exercise;
+import '../services/posture_engine_service.dart' as engine;
+import '../theme/app_theme.dart';
 import '../router.dart';
 
-// ─── Landmark / Joint model ──────────────────
+// ─── Skeleton topology ──────────────────────
 
-enum JointStatus { correct, warning, incorrect }
-
-class Landmark {
-  final double x; // 0-1 normalized
-  final double y;
-  final JointStatus status;
-  const Landmark(this.x, this.y, this.status);
-}
-
-/// Indices into the landmarks list
-class _J {
-  static const head = 0;
-  static const neck = 1;
-  static const lShoulder = 2;
-  static const rShoulder = 3;
-  static const lElbow = 4;
-  static const rElbow = 5;
-  static const lWrist = 6;
-  static const rWrist = 7;
-  static const lHip = 8;
-  static const rHip = 9;
-  static const lKnee = 10;
-  static const rKnee = 11;
-  static const lAnkle = 12;
-  static const rAnkle = 13;
-}
-
-/// Bone connections as pairs of landmark indices
-const _bones = <List<int>>[
-  [_J.head, _J.neck],
-  [_J.neck, _J.lShoulder],
-  [_J.neck, _J.rShoulder],
-  [_J.lShoulder, _J.lElbow],
-  [_J.rShoulder, _J.rElbow],
-  [_J.lElbow, _J.lWrist],
-  [_J.rElbow, _J.rWrist],
-  [_J.neck, _J.lHip],
-  [_J.neck, _J.rHip],
-  [_J.lHip, _J.rHip],
-  [_J.lHip, _J.lKnee],
-  [_J.rHip, _J.rKnee],
-  [_J.lKnee, _J.lAnkle],
-  [_J.rKnee, _J.rAnkle],
+const _skeletonBones = <(LandmarkType, LandmarkType)>[
+  (LandmarkType.nose, LandmarkType.leftShoulder),
+  (LandmarkType.nose, LandmarkType.rightShoulder),
+  (LandmarkType.leftShoulder, LandmarkType.rightShoulder),
+  (LandmarkType.leftShoulder, LandmarkType.leftElbow),
+  (LandmarkType.rightShoulder, LandmarkType.rightElbow),
+  (LandmarkType.leftElbow, LandmarkType.leftWrist),
+  (LandmarkType.rightElbow, LandmarkType.rightWrist),
+  (LandmarkType.leftShoulder, LandmarkType.leftHip),
+  (LandmarkType.rightShoulder, LandmarkType.rightHip),
+  (LandmarkType.leftHip, LandmarkType.rightHip),
+  (LandmarkType.leftHip, LandmarkType.leftKnee),
+  (LandmarkType.rightHip, LandmarkType.rightKnee),
+  (LandmarkType.leftKnee, LandmarkType.leftAnkle),
+  (LandmarkType.rightKnee, LandmarkType.rightAnkle),
 ];
 
-// ─── Mock data generator ─────────────────────
+/// Maps rule class names → the landmark types that rule evaluates, so the
+/// skeleton painter can color individual joints by the worst rule outcome.
+const _ruleToLandmarks = <String, List<LandmarkType>>{
+  'SquatKneeAngleRule': [
+    LandmarkType.leftHip, LandmarkType.leftKnee, LandmarkType.leftAnkle,
+    LandmarkType.rightHip, LandmarkType.rightKnee, LandmarkType.rightAnkle,
+  ],
+  'SquatBackStraightRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+    LandmarkType.leftHip, LandmarkType.rightHip,
+  ],
+  'LungeKneeAngleRule': [
+    LandmarkType.leftHip, LandmarkType.leftKnee, LandmarkType.leftAnkle,
+    LandmarkType.rightHip, LandmarkType.rightKnee, LandmarkType.rightAnkle,
+  ],
+  'LungeTorsoUprightRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+    LandmarkType.leftHip, LandmarkType.rightHip,
+  ],
+  'ShoulderSymmetryRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+  ],
+  'ShoulderEarDistanceRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+    LandmarkType.leftEar, LandmarkType.rightEar,
+  ],
+  'SpineCurvatureRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+    LandmarkType.leftHip, LandmarkType.rightHip,
+    LandmarkType.leftKnee, LandmarkType.rightKnee,
+  ],
+  'CatCowHeadAlignmentRule': [
+    LandmarkType.nose,
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+  ],
+  'StandingAlignmentRule': [
+    LandmarkType.leftEar, LandmarkType.rightEar,
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+    LandmarkType.leftHip, LandmarkType.rightHip,
+  ],
+  'StandingShoulderLevelRule': [
+    LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+  ],
+};
 
-class _MockPoseEngine {
-  int _tick = 0;
-
-  // Simulate a squat cycle — landmarks shift subtly per tick
-  List<Landmark> get landmarks {
-    _tick++;
-    final phase = math.sin(_tick * 0.08) * 0.5 + 0.5; // 0→1 oscillation
-    final squat = phase * 0.08; // knee bend amount
-
-    return [
-      const Landmark(0.50, 0.12, JointStatus.correct),                         // head
-      const Landmark(0.50, 0.22, JointStatus.correct),                         // neck
-      const Landmark(0.38, 0.26, JointStatus.correct),                         // l shoulder
-      const Landmark(0.62, 0.26, JointStatus.correct),                         // r shoulder
-      const Landmark(0.32, 0.38, JointStatus.correct),                         // l elbow
-      const Landmark(0.68, 0.38, JointStatus.correct),                         // r elbow
-      const Landmark(0.30, 0.48, JointStatus.correct),                         // l wrist
-      const Landmark(0.70, 0.48, JointStatus.correct),                         // r wrist
-      Landmark(0.42, 0.52 + squat, JointStatus.correct),                 // l hip
-      Landmark(0.58, 0.52 + squat, JointStatus.correct),                 // r hip
-      Landmark(0.40, 0.70 + squat, _kneeStatus(phase)),                  // l knee
-      Landmark(0.60, 0.70 + squat, _kneeStatus(phase)),                  // r knee
-      const Landmark(0.40, 0.88, JointStatus.correct),                         // l ankle
-      const Landmark(0.60, 0.88, JointStatus.correct),                         // r ankle
-    ];
-  }
-
-  JointStatus _kneeStatus(double phase) {
-    if (phase > 0.7) return JointStatus.warning;
-    return JointStatus.correct;
-  }
-
-  int score(int baseTick) {
-    // Oscillate score around 78-92
-    return 78 + (math.sin(baseTick * 0.1) * 7).round().abs();
-  }
-
-  List<String> tips(int scoreval) {
-    if (scoreval >= 88) {
-      return [
-        'Great depth — keep your chest lifted.',
-        'Weight distribution looks even.',
-      ];
+/// Resolves per-joint color from the per-rule [jointStates] map.
+/// Each joint gets the worst (highest index) status of all rules that touch it.
+Map<LandmarkType, JointStatus> _resolveJointStatuses(
+  Map<String, JointStatus> ruleStates,
+) {
+  final result = <LandmarkType, JointStatus>{};
+  for (final entry in ruleStates.entries) {
+    final landmarks = _ruleToLandmarks[entry.key];
+    if (landmarks == null) continue;
+    for (final lm in landmarks) {
+      final existing = result[lm];
+      if (existing == null || entry.value.index > existing.index) {
+        result[lm] = entry.value;
+      }
     }
-    if (scoreval >= 80) {
-      return [
-        'Push your knees out over your toes.',
-        'Brace your core before each rep.',
-        'Slow down the descent for control.',
-      ];
-    }
-    return [
-      'Avoid letting your knees cave inward.',
-      'Hinge at the hips before bending knees.',
-      'Keep your heels planted on the ground.',
-    ];
+  }
+  return result;
+}
+
+/// Maps exercise id strings from the router to engine Exercise enum.
+engine.Exercise _exerciseFromId(String? id) {
+  switch (id) {
+    case 'squat':
+      return engine.Exercise.squat;
+    case 'lunge':
+      return engine.Exercise.lunge;
+    case 'shoulder_roll':
+      return engine.Exercise.shoulderRoll;
+    case 'cat_cow':
+      return engine.Exercise.catCow;
+    case 'standing_posture':
+      return engine.Exercise.standingPosture;
+    default:
+      return engine.Exercise.standingPosture;
   }
 }
 
@@ -119,28 +118,18 @@ class _MockPoseEngine {
 //  Live Analysis Screen
 // ══════════════════════════════════════════════
 
-class LiveAnalysisScreen extends StatefulWidget {
+class LiveAnalysisScreen extends ConsumerStatefulWidget {
   const LiveAnalysisScreen({super.key, this.exerciseId});
   final String? exerciseId;
 
   @override
-  State<LiveAnalysisScreen> createState() => _LiveAnalysisScreenState();
+  ConsumerState<LiveAnalysisScreen> createState() => _LiveAnalysisScreenState();
 }
 
-class _LiveAnalysisScreenState extends State<LiveAnalysisScreen>
+class _LiveAnalysisScreenState extends ConsumerState<LiveAnalysisScreen>
     with TickerProviderStateMixin {
-  final _engine = _MockPoseEngine();
-  Timer? _ticker;
-  int _tick = 0;
-
-  // Session state
-  List<Landmark> _landmarks = [];
-  int _score = 85;
-  int _prevScore = 85;
-  int _reps = 0;
+  Timer? _elapsedTimer;
   int _elapsedSeconds = 0;
-  List<String> _tips = [];
-  bool _showGoodForm = false;
 
   // Animations
   late final AnimationController _scoreAnimController;
@@ -153,11 +142,15 @@ class _LiveAnalysisScreenState extends State<LiveAnalysisScreen>
   late final String _exerciseName;
   late final String _exerciseId;
 
+  int _prevScore = 0;
+  bool _wasCelebrating = false;
+
   @override
   void initState() {
+    super.initState();
+
     _exerciseId = widget.exerciseId ?? exercises.first.id;
     _exerciseName = exerciseById(_exerciseId).name;
-    super.initState();
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -200,63 +193,39 @@ class _LiveAnalysisScreenState extends State<LiveAnalysisScreen>
       curve: Curves.easeOut,
     );
 
-    // Init first frame
-    _landmarks = _engine.landmarks;
-    _tips = _engine.tips(_score);
-
     _entranceController.forward();
 
-    // Simulate real-time updates at ~15fps
-    _ticker = Timer.periodic(const Duration(milliseconds: 66), _onTick);
-  }
+    // Elapsed time counter
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _elapsedSeconds++);
+    });
 
-  void _onTick(Timer _) {
-    if (!mounted) return;
-    _tick++;
-
-    final newLandmarks = _engine.landmarks;
-    final newScore = _engine.score(_tick);
-    final newTips = _engine.tips(newScore);
-
-    // Count reps on phase crossings (roughly every 80 ticks)
-    if (_tick > 0 && _tick % 80 == 0) {
-      _reps++;
-    }
-
-    // Elapsed time
-    if (_tick % 15 == 0) {
-      _elapsedSeconds++;
-    }
-
-    // Detect "good form" moment
-    final wasGood = _showGoodForm;
-    final isGood = newScore >= 88;
-    if (isGood && !wasGood) {
-      _goodFormController.forward(from: 0);
-    }
-
-    // Animate score changes
-    if (newScore != _score) {
-      _prevScore = _score;
-      _scoreAnimController.forward(from: 0);
-    }
-
-    setState(() {
-      _landmarks = newLandmarks;
-      _score = newScore;
-      _tips = newTips;
-      _showGoodForm = isGood;
+    // Set the selected exercise for the engine & start camera after frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(engine.selectedExerciseProvider.notifier).state =
+          _exerciseFromId(_exerciseId);
+      _initCamera();
     });
   }
 
+  Future<void> _initCamera() async {
+    try {
+      final notifier = ref.read(cameraServiceProvider.notifier);
+      await notifier.initialize(facing: CameraFacing.back);
+      await notifier.startStream();
+    } catch (e) {
+      debugPrint('Camera init failed: $e');
+    }
+  }
+
   void _endSession() {
-    _ticker?.cancel();
+    _elapsedTimer?.cancel();
     context.go(AppRoutes.report, extra: _exerciseId);
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    _elapsedTimer?.cancel();
     _scoreAnimController.dispose();
     _goodFormController.dispose();
     _entranceController.dispose();
@@ -271,6 +240,29 @@ class _LiveAnalysisScreenState extends State<LiveAnalysisScreen>
 
   @override
   Widget build(BuildContext context) {
+    final session = ref.watch(feedbackServiceProvider);
+    final cameraAsync = ref.watch(cameraServiceProvider);
+    final landmarkAsync = ref.watch(landmarksProvider);
+
+    // React to score changes for the ring animation.
+    ref.listen<SessionState>(feedbackServiceProvider, (prev, next) {
+      if (next.currentScore != (prev?.currentScore ?? 0)) {
+        _prevScore = prev?.currentScore ?? 0;
+        _scoreAnimController.forward(from: 0);
+      }
+      // Trigger celebration animation.
+      if (next.isCelebrating && !_wasCelebrating) {
+        _goodFormController.forward(from: 0);
+      }
+      _wasCelebrating = next.isCelebrating;
+    });
+
+    // Resolve per-joint statuses for the skeleton painter.
+    final jointColors = _resolveJointStatuses(session.jointStates);
+
+    // Collect landmarks.
+    final landmarks = landmarkAsync.valueOrNull ?? [];
+
     return FadeTransition(
       opacity: _entranceFade,
       child: Scaffold(
@@ -292,53 +284,38 @@ class _LiveAnalysisScreenState extends State<LiveAnalysisScreen>
                   builder: (context, constraints) {
                     final isWide = constraints.maxWidth > 600;
 
+                    final cameraFeed = _CameraFeed(
+                      cameraAsync: cameraAsync,
+                      landmarks: landmarks,
+                      jointColors: jointColors,
+                    );
+
+                    final feedbackPanel = _FeedbackPanel(
+                      exerciseName: _exerciseName,
+                      reps: session.repCount,
+                      score: session.currentScore,
+                      prevScore: _prevScore,
+                      scoreAnim: _scoreAnimController,
+                      tips: session.corrections,
+                      goodFormController: _goodFormController,
+                      goodFormOpacity: _goodFormOpacity,
+                      goodFormScale: _goodFormScale,
+                      isCelebrating: session.isCelebrating,
+                    );
+
                     if (isWide) {
-                      // Side by side
                       return Row(
                         children: [
-                          Expanded(
-                            flex: 3,
-                            child: _CameraFeed(landmarks: _landmarks),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: _FeedbackPanel(
-                              exerciseName: _exerciseName,
-                              reps: _reps,
-                              score: _score,
-                              prevScore: _prevScore,
-                              scoreAnim: _scoreAnimController,
-                              tips: _tips,
-                              goodFormController: _goodFormController,
-                              goodFormOpacity: _goodFormOpacity,
-                              goodFormScale: _goodFormScale,
-                            ),
-                          ),
+                          Expanded(flex: 3, child: cameraFeed),
+                          Expanded(flex: 2, child: feedbackPanel),
                         ],
                       );
                     }
 
-                    // Stacked — camera on top, panel below
                     return Column(
                       children: [
-                        Expanded(
-                          flex: 5,
-                          child: _CameraFeed(landmarks: _landmarks),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: _FeedbackPanel(
-                            exerciseName: _exerciseName,
-                            reps: _reps,
-                            score: _score,
-                            prevScore: _prevScore,
-                            scoreAnim: _scoreAnimController,
-                            tips: _tips,
-                            goodFormController: _goodFormController,
-                            goodFormOpacity: _goodFormOpacity,
-                            goodFormScale: _goodFormScale,
-                          ),
-                        ),
+                        Expanded(flex: 5, child: cameraFeed),
+                        Expanded(flex: 4, child: feedbackPanel),
                       ],
                     );
                   },
@@ -465,8 +442,15 @@ class _TopBar extends StatelessWidget {
 // ══════════════════════════════════════════════
 
 class _CameraFeed extends StatelessWidget {
-  const _CameraFeed({required this.landmarks});
+  const _CameraFeed({
+    required this.cameraAsync,
+    required this.landmarks,
+    required this.jointColors,
+  });
+
+  final AsyncValue<CameraState> cameraAsync;
   final List<Landmark> landmarks;
+  final Map<LandmarkType, JointStatus> jointColors;
 
   @override
   Widget build(BuildContext context) {
@@ -489,31 +473,42 @@ class _CameraFeed extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Placeholder text
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.videocam_rounded,
-                      size: 40,
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Camera feed',
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
-                    ),
-                  ],
-                ),
+              // Camera preview or placeholder
+              cameraAsync.when(
+                data: (state) {
+                  final controller = state.controller;
+                  if (controller == null || !controller.value.isInitialized) {
+                    return _cameraPlaceholder('Initializing camera...');
+                  }
+                  return CameraPreview(controller);
+                },
+                loading: () => _cameraPlaceholder('Starting camera...'),
+                error: (e, _) => _cameraPlaceholder('Camera unavailable'),
               ),
 
               // Skeleton overlay
-              CustomPaint(
-                painter: _SkeletonPainter(landmarks: landmarks),
-              ),
+              if (landmarks.isNotEmpty)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Get the image dimensions from the camera to map coordinates.
+                    final controller =
+                        cameraAsync.valueOrNull?.controller;
+                    final previewSize =
+                        controller?.value.previewSize; // width × height of image
+                    final imageW = previewSize?.height ?? constraints.maxWidth;
+                    final imageH = previewSize?.width ?? constraints.maxHeight;
+
+                    return CustomPaint(
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      painter: _SkeletonPainter(
+                        landmarks: landmarks,
+                        jointColors: jointColors,
+                        imageWidth: imageW,
+                        imageHeight: imageH,
+                      ),
+                    );
+                  },
+                ),
 
               // Viewfinder corners
               CustomPaint(
@@ -525,13 +520,44 @@ class _CameraFeed extends StatelessWidget {
       ),
     );
   }
+
+  Widget _cameraPlaceholder(String message) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.videocam_rounded,
+            size: 40,
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: AppTextStyles.caption.copyWith(
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ─── Skeleton painter with color-coded joints ──
+// ─── Skeleton painter with per-joint color coding ──
 
 class _SkeletonPainter extends CustomPainter {
-  _SkeletonPainter({required this.landmarks});
+  _SkeletonPainter({
+    required this.landmarks,
+    required this.jointColors,
+    required this.imageWidth,
+    required this.imageHeight,
+  });
+
   final List<Landmark> landmarks;
+  final Map<LandmarkType, JointStatus> jointColors;
+  final double imageWidth;
+  final double imageHeight;
 
   static const _correctColor = AppColors.primary;
   static const _warningColor = Color(0xFFFFB020);
@@ -550,20 +576,42 @@ class _SkeletonPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (landmarks.length < 14) return;
+    if (landmarks.isEmpty) return;
 
-    // Map normalized coords to canvas
-    Offset pt(int i) =>
-        Offset(landmarks[i].x * size.width, landmarks[i].y * size.height);
+    // Build lookup by type.
+    final byType = <LandmarkType, Landmark>{};
+    for (final lm in landmarks) {
+      byType[lm.type] = lm;
+    }
 
-    // Draw bones
-    for (final bone in _bones) {
-      final a = bone[0];
-      final b = bone[1];
+    // Compute scale to fit image coordinates into the widget, preserving
+    // aspect ratio (cover mode, matching CameraPreview behavior).
+    final scaleX = size.width / imageWidth;
+    final scaleY = size.height / imageHeight;
+    final scale = math.max(scaleX, scaleY);
+    final offsetX = (size.width - imageWidth * scale) / 2;
+    final offsetY = (size.height - imageHeight * scale) / 2;
 
-      // Bone color = worst status of its two joints
-      final statusA = landmarks[a].status;
-      final statusB = landmarks[b].status;
+    Offset pt(Landmark lm) {
+      return Offset(
+        lm.x * scale + offsetX,
+        lm.y * scale + offsetY,
+      );
+    }
+
+    JointStatus statusOf(LandmarkType type) {
+      return jointColors[type] ?? JointStatus.correct;
+    }
+
+    // Draw bones.
+    for (final bone in _skeletonBones) {
+      final a = byType[bone.$1];
+      final b = byType[bone.$2];
+      if (a == null || b == null) continue;
+      if (a.likelihood < 0.5 || b.likelihood < 0.5) continue;
+
+      final statusA = statusOf(bone.$1);
+      final statusB = statusOf(bone.$2);
       final worstStatus = statusA.index >= statusB.index ? statusA : statusB;
 
       final bonePaint = Paint()
@@ -575,11 +623,25 @@ class _SkeletonPainter extends CustomPainter {
       canvas.drawLine(pt(a), pt(b), bonePaint);
     }
 
-    // Draw joints
-    for (int i = 0; i < landmarks.length; i++) {
-      final p = pt(i);
-      final color = _statusColor(landmarks[i].status);
-      final isHead = i == _J.head;
+    // Draw joints — only the subset used in the skeleton.
+    const renderedTypes = <LandmarkType>{
+      LandmarkType.nose,
+      LandmarkType.leftEar, LandmarkType.rightEar,
+      LandmarkType.leftShoulder, LandmarkType.rightShoulder,
+      LandmarkType.leftElbow, LandmarkType.rightElbow,
+      LandmarkType.leftWrist, LandmarkType.rightWrist,
+      LandmarkType.leftHip, LandmarkType.rightHip,
+      LandmarkType.leftKnee, LandmarkType.rightKnee,
+      LandmarkType.leftAnkle, LandmarkType.rightAnkle,
+    };
+
+    for (final type in renderedTypes) {
+      final lm = byType[type];
+      if (lm == null || lm.likelihood < 0.5) continue;
+
+      final p = pt(lm);
+      final color = _statusColor(statusOf(type));
+      final isHead = type == LandmarkType.nose;
       final radius = isHead ? 12.0 : 6.0;
 
       // Glow
@@ -661,6 +723,7 @@ class _FeedbackPanel extends StatelessWidget {
     required this.goodFormController,
     required this.goodFormOpacity,
     required this.goodFormScale,
+    required this.isCelebrating,
   });
 
   final String exerciseName;
@@ -672,144 +735,178 @@ class _FeedbackPanel extends StatelessWidget {
   final AnimationController goodFormController;
   final Animation<double> goodFormOpacity;
   final Animation<double> goodFormScale;
+  final bool isCelebrating;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.sm + 2, 0, AppSpacing.sm + 2, AppSpacing.sm + 2,
-      ),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg, AppSpacing.lg,
-        AppSpacing.lg, AppSpacing.md + bottomPadding,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(
+            AppSpacing.sm + 2, 0, AppSpacing.sm + 2, AppSpacing.sm + 2,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Exercise + reps row ──
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(exerciseName, style: AppTextStyles.headingMedium),
-                    const SizedBox(height: 2),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '$reps',
-                            style: AppTextStyles.headingLarge.copyWith(
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const TextSpan(
-                            text: ' reps',
-                            style: AppTextStyles.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Circular score
-              _AnimatedScoreRing(
-                score: score,
-                prevScore: prevScore,
-                animation: scoreAnim,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.lg,
+            AppSpacing.lg, AppSpacing.md + bottomPadding,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
-
-          const SizedBox(height: AppSpacing.md + 4),
-
-          // ── Good form flash ──
-          AnimatedBuilder(
-            animation: goodFormController,
-            builder: (context, _) {
-              if (goodFormOpacity.value <= 0) {
-                return const SizedBox(height: 0);
-              }
-              return Opacity(
-                opacity: goodFormOpacity.value,
-                child: Transform.scale(
-                  scale: goodFormScale.value,
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm + 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.successLight,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: AppColors.success.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Exercise + reps row ──
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: AppColors.success,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Good form — keep it up!',
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: AppColors.success,
+                        Text(exerciseName, style: AppTextStyles.headingMedium),
+                        const SizedBox(height: 2),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$reps',
+                                style: AppTextStyles.headingLarge.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ' reps',
+                                style: AppTextStyles.bodyMedium,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  // Circular score
+                  _AnimatedScoreRing(
+                    score: score,
+                    prevScore: prevScore,
+                    animation: scoreAnim,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.md + 4),
+
+              // ── Good form flash ──
+              AnimatedBuilder(
+                animation: goodFormController,
+                builder: (context, _) {
+                  if (goodFormOpacity.value <= 0) {
+                    return const SizedBox(height: 0);
+                  }
+                  return Opacity(
+                    opacity: goodFormOpacity.value,
+                    child: Transform.scale(
+                      scale: goodFormScale.value,
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm + 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.successLight,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.success,
+                              size: 18,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Good form — keep it up!',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // ── Correction tips ──
+              Text(
+                'Live feedback',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textTertiary,
+                  letterSpacing: 0.5,
+                  fontSize: 11,
                 ),
-              );
-            },
-          ),
+              ),
+              const SizedBox(height: AppSpacing.sm + 2),
 
-          // ── Correction tips ──
-          Text(
-            'Live feedback',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.textTertiary,
-              letterSpacing: 0.5,
-              fontSize: 11,
+              Expanded(
+                child: tips.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Looking good! Keep it up.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: tips.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm + 2),
+                        itemBuilder: (_, i) => _TipRow(text: tips[i], index: i),
+                      ),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Green celebration overlay ──
+        if (isCelebrating)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: isCelebrating ? 0.12 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(
+                    AppSpacing.sm + 2, 0, AppSpacing.sm + 2, AppSpacing.sm + 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm + 2),
-
-          Expanded(
-            child: ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemCount: tips.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm + 2),
-              itemBuilder: (_, i) => _TipRow(text: tips[i], index: i),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

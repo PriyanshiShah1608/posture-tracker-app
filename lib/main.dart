@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/app_theme.dart';
 import 'router.dart';
 
@@ -11,7 +12,7 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const PosturelyApp());
+  runApp(const ProviderScope(child: PosturelyApp()));
 }
 
 class PosturelyApp extends StatelessWidget {
