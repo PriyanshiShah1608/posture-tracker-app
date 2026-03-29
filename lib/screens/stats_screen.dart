@@ -169,20 +169,20 @@ class _StatsScreenState extends State<StatsScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Row(
+                                  const Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.trending_up_rounded,
                                         color: Color(0xFF10B981),
                                         size: 16,
                                       ),
-                                      const SizedBox(width: 4),
+                                      SizedBox(width: 4),
                                       Text(
                                         '+6% this week',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF10B981),
+                                          color: Color(0xFF10B981),
                                         ),
                                       ),
                                     ],
@@ -241,9 +241,9 @@ class _StatsScreenState extends State<StatsScreen> {
                                         const SizedBox(height: 8),
                                         Expanded(
                                           child: Container(
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF4F46E5),
-                                              borderRadius: const BorderRadius.vertical(
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF4F46E5),
+                                              borderRadius: BorderRadius.vertical(
                                                 top: Radius.circular(8),
                                               ),
                                             ),
@@ -353,9 +353,9 @@ class _StatsScreenState extends State<StatsScreen> {
                                       children: [
                                         Expanded(
                                           child: Container(
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF4F46E5),
-                                              borderRadius: const BorderRadius.vertical(
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF4F46E5),
+                                              borderRadius: BorderRadius.vertical(
                                                 top: Radius.circular(8),
                                               ),
                                             ),

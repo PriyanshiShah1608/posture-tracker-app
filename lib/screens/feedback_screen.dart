@@ -101,8 +101,8 @@ class FeedbackScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            children: const [
+                          const Row(
+                            children: [
                               Icon(
                                 Icons.trending_up_rounded,
                                 color: Colors.white,
@@ -317,8 +317,8 @@ class FeedbackScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: const [
+                      const Row(
+                        children: [
                           Icon(
                             Icons.thumb_up_rounded,
                             color: Color(0xFF10B981),

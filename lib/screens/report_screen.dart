@@ -197,8 +197,8 @@ class ReportScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: const [
+                          const Row(
+                            children: [
                               Icon(
                                 Icons.lightbulb_rounded,
                                 color: Color(0xFFF59E0B),

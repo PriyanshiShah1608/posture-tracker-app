@@ -154,9 +154,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // Quick Stats
                           Row(
                             children: [
-                              Expanded(
+                              const Expanded(
                                 child: Column(
-                                  children: const [
+                                  children: [
                                     Text(
                                       '12',
                                       style: TextStyle(
@@ -181,9 +181,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 height: 40,
                                 color: Colors.grey.shade100,
                               ),
-                              Expanded(
+                              const Expanded(
                                 child: Column(
-                                  children: const [
+                                  children: [
                                     Text(
                                       '5',
                                       style: TextStyle(
@@ -208,9 +208,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 height: 40,
                                 color: Colors.grey.shade100,
                               ),
-                              Expanded(
+                              const Expanded(
                                 child: Column(
-                                  children: const [
+                                  children: [
                                     Text(
                                       '89',
                                       style: TextStyle(
@@ -308,9 +308,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           elevation: 4,
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.logout_rounded, size: 20),
                             SizedBox(width: 8),
                             Text(
